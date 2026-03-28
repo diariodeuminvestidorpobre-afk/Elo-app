@@ -28,6 +28,20 @@ import {
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Token helper for cross-domain auth
+const getToken = () => localStorage.getItem('elo_token');
+const setToken = (token) => localStorage.setItem('elo_token', token);
+const clearToken = () => localStorage.removeItem('elo_token');
+
+// Axios interceptor to add token to all requests
+axios.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // ============= LOGO COMPONENT =============
 
 function EloLogo({ size = "large" }) {
@@ -76,7 +90,7 @@ function AuthCallback() {
       return;
     }
 
-    axios.post(`${API}/auth/session`, { session_id: sessionId }, { withCredentials: true })
+    axios.post(`${API}/auth/session`, { session_id: sessionId })
       .then(response => {
         navigate('/feed', { replace: true, state: { user: response.data } });
       })
@@ -125,7 +139,8 @@ function LoginPage() {
     
     try {
       if (isLogin) {
-        const response = await axios.post(`${API}/auth/login`, { phone: rawPhone, password }, { withCredentials: true });
+        const response = await axios.post(`${API}/auth/login`, { phone: rawPhone, password });
+        setToken(response.data.token);
         toast.success('Bem-vindo de volta!');
         navigate('/feed', { replace: true, state: { user: response.data } });
       } else {
@@ -134,7 +149,8 @@ function LoginPage() {
           setLoading(false);
           return;
         }
-        const response = await axios.post(`${API}/auth/register`, { phone: rawPhone, password, name: name.trim() }, { withCredentials: true });
+        const response = await axios.post(`${API}/auth/register`, { phone: rawPhone, password, name: name.trim() });
+        setToken(response.data.token);
         toast.success('Conta criada com sucesso!');
         navigate('/feed', { replace: true, state: { user: response.data } });
       }
@@ -257,7 +273,7 @@ function ProtectedRoute({ children }) {
       return;
     }
 
-    axios.get(`${API}/auth/me`, { withCredentials: true })
+    axios.get(`${API}/auth/me`)
       .then(response => {
         setUser(response.data);
         setIsAuthenticated(true);
@@ -323,7 +339,7 @@ function VideoFeed({ user }) {
 
   const loadVideos = async () => {
     try {
-      const response = await axios.get(`${API}/videos/feed`, { withCredentials: true });
+      const response = await axios.get(`${API}/videos/feed`);
       setVideos(response.data);
     } catch (error) {
       toast.error('Erro ao carregar vídeos');
@@ -334,7 +350,7 @@ function VideoFeed({ user }) {
 
   const handleLike = async (videoId) => {
     try {
-      const response = await axios.post(`${API}/videos/${videoId}/like`, {}, { withCredentials: true });
+      const response = await axios.post(`${API}/videos/${videoId}/like`, {});
       setVideos(videos.map(v => 
         v.video_id === videoId 
           ? { ...v, likes_count: v.likes_count + (response.data.liked ? 1 : -1) }
@@ -470,13 +486,13 @@ function UploadModal({ onClose, onSuccess }) {
 
     try {
       const uploadResponse = await axios.post(`${API}/videos/upload`, formData, {
-        withCredentials: true,
+        
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
       if (caption) {
         await axios.put(`${API}/videos/${uploadResponse.data.video_id}/caption?caption=${encodeURIComponent(caption)}`, {}, {
-          withCredentials: true
+          
         });
       }
 
@@ -560,7 +576,7 @@ function PrayersPage({ user }) {
 
   const loadPrayers = async () => {
     try {
-      const response = await axios.get(`${API}/prayers`, { withCredentials: true });
+      const response = await axios.get(`${API}/prayers`);
       setPrayers(response.data);
     } catch (error) {
       toast.error('Erro ao carregar orações');
@@ -571,7 +587,7 @@ function PrayersPage({ user }) {
 
   const loadVerse = async () => {
     try {
-      const response = await axios.get(`${API}/verses/daily`, { withCredentials: true });
+      const response = await axios.get(`${API}/verses/daily`);
       setVerse(response.data);
     } catch (error) {
       console.error('Erro ao carregar versículo');
@@ -580,7 +596,7 @@ function PrayersPage({ user }) {
 
   const handlePray = async (prayerId) => {
     try {
-      await axios.post(`${API}/prayers/${prayerId}/pray`, {}, { withCredentials: true });
+      await axios.post(`${API}/prayers/${prayerId}/pray`, {});
       setPrayers(prayers.map(p => 
         p.prayer_id === prayerId ? { ...p, prayer_count: p.prayer_count + 1 } : p
       ));
@@ -696,7 +712,7 @@ function CreatePrayerModal({ onClose, onSuccess }) {
 
     setSubmitting(true);
     try {
-      await axios.post(`${API}/prayers?text=${encodeURIComponent(text)}`, {}, { withCredentials: true });
+      await axios.post(`${API}/prayers?text=${encodeURIComponent(text)}`, {});
       toast.success('Pedido criado!');
       onSuccess();
       onClose();
@@ -752,7 +768,7 @@ function CommunitiesPage({ user }) {
 
   const loadCommunities = async () => {
     try {
-      const response = await axios.get(`${API}/communities`, { withCredentials: true });
+      const response = await axios.get(`${API}/communities`);
       setCommunities(response.data);
     } catch (error) {
       toast.error('Erro ao carregar comunidades');
@@ -836,7 +852,7 @@ function CreateCommunityModal({ onClose, onSuccess }) {
 
     setSubmitting(true);
     try {
-      await axios.post(`${API}/communities?name=${encodeURIComponent(name)}&description=${encodeURIComponent(description)}`, {}, { withCredentials: true });
+      await axios.post(`${API}/communities?name=${encodeURIComponent(name)}&description=${encodeURIComponent(description)}`, {});
       toast.success('Comunidade criada!');
       onSuccess();
       onClose();
@@ -911,7 +927,7 @@ function CommunityDetail({ user }) {
 
   const loadMessages = async () => {
     try {
-      const response = await axios.get(`${API}/communities/${id}/messages`, { withCredentials: true });
+      const response = await axios.get(`${API}/communities/${id}/messages`);
       setMessages(response.data.reverse());
       setIsMember(true);
     } catch (error) {
@@ -927,7 +943,7 @@ function CommunityDetail({ user }) {
 
   const handleJoin = async () => {
     try {
-      await axios.post(`${API}/communities/${id}/join`, {}, { withCredentials: true });
+      await axios.post(`${API}/communities/${id}/join`, {});
       toast.success('Você entrou na comunidade!');
       setIsMember(true);
       loadMessages();
@@ -940,7 +956,7 @@ function CommunityDetail({ user }) {
     if (!newMessage.trim()) return;
 
     try {
-      await axios.post(`${API}/communities/${id}/messages?message=${encodeURIComponent(newMessage)}`, {}, { withCredentials: true });
+      await axios.post(`${API}/communities/${id}/messages?message=${encodeURIComponent(newMessage)}`, {});
       setNewMessage('');
       loadMessages();
     } catch (error) {
@@ -1033,10 +1049,12 @@ function ProfilePage({ user }) {
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
+      await axios.post(`${API}/auth/logout`, {});
+      clearToken();
       navigate('/login');
     } catch (error) {
-      toast.error('Erro ao sair');
+      clearToken();
+      navigate('/login');
     }
   };
 
@@ -1197,7 +1215,7 @@ function DonatePage({ user }) {
       const response = await axios.post(
         `${API}/payments/checkout?package_type=${selectedPackage}&origin_url=${encodeURIComponent(originUrl)}`,
         {},
-        { withCredentials: true }
+        
       );
       window.location.href = response.data.url;
     } catch (error) {
@@ -1289,7 +1307,7 @@ function DonateSuccess() {
     }
 
     try {
-      const response = await axios.get(`${API}/payments/checkout/status/${sessionId}`, { withCredentials: true });
+      const response = await axios.get(`${API}/payments/checkout/status/${sessionId}`);
       
       if (response.data.payment_status === 'paid') {
         setStatus('success');

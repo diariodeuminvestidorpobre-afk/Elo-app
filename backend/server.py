@@ -394,8 +394,9 @@ async def register(req: RegisterRequest):
     }
     await db.user_sessions.insert_one(session_data)
     
-    # Return user (without password_hash)
+    # Return user (without password_hash) + token
     user_response = {k: v for k, v in user_data.items() if k not in ("password_hash", "_id")}
+    user_response["token"] = session_token
     
     response = JSONResponse(content=user_response)
     response.set_cookie(
@@ -436,8 +437,9 @@ async def login(req: LoginRequest):
     }
     await db.user_sessions.insert_one(session_data)
     
-    # Return user (without password_hash)
+    # Return user (without password_hash) + token
     user_response = {k: v for k, v in user_doc.items() if k != "password_hash"}
+    user_response["token"] = session_token
     
     response = JSONResponse(content=user_response)
     response.set_cookie(
@@ -527,9 +529,15 @@ async def get_me(authorization: Optional[str] = Header(None), session_token: Opt
         raise
 
 @api_router.post("/auth/logout")
-async def logout(session_token: Optional[str] = Cookie(None)):
+async def logout(authorization: Optional[str] = Header(None), session_token: Optional[str] = Cookie(None)):
+    token = None
     if session_token:
-        await db.user_sessions.delete_one({"session_token": session_token})
+        token = session_token
+    elif authorization and authorization.startswith("Bearer "):
+        token = authorization.replace("Bearer ", "")
+    
+    if token:
+        await db.user_sessions.delete_one({"session_token": token})
     
     response = JSONResponse(content={"message": "Logged out"})
     response.delete_cookie("session_token", path="/")
