@@ -98,10 +98,52 @@ function AuthCallback() {
 }
 
 function LoginPage() {
-  const handleLogin = () => {
-    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-    const redirectUrl = window.location.origin + '/auth/callback';
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+  const [isLogin, setIsLogin] = useState(true);
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const formatPhone = (value) => {
+    const digits = value.replace(/\D/g, '');
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 7) return `(${digits.slice(0,2)}) ${digits.slice(2)}`;
+    if (digits.length <= 11) return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`;
+    return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7,11)}`;
+  };
+
+  const handlePhoneChange = (e) => {
+    setPhone(formatPhone(e.target.value));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    const rawPhone = phone.replace(/\D/g, '');
+    
+    try {
+      if (isLogin) {
+        const response = await axios.post(`${API}/auth/login`, { phone: rawPhone, password }, { withCredentials: true });
+        toast.success('Bem-vindo de volta!');
+        navigate('/feed', { replace: true, state: { user: response.data } });
+      } else {
+        if (name.trim().length < 2) {
+          toast.error('Digite seu nome');
+          setLoading(false);
+          return;
+        }
+        const response = await axios.post(`${API}/auth/register`, { phone: rawPhone, password, name: name.trim() }, { withCredentials: true });
+        toast.success('Conta criada com sucesso!');
+        navigate('/feed', { replace: true, state: { user: response.data } });
+      }
+    } catch (error) {
+      const detail = error.response?.data?.detail;
+      const msg = typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map(e => e.msg || JSON.stringify(e)).join(' ') : 'Erro ao processar';
+      toast.error(msg);
+    }
+    setLoading(false);
   };
 
   return (
@@ -118,15 +160,65 @@ function LoginPage() {
         </div>
         
         <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border border-white/30">
-          <div className="space-y-4">
+          <div className="flex mb-6 bg-gray-100 rounded-full p-1">
             <button
-              onClick={handleLogin}
-              data-testid="google-login-button"
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 px-6 rounded-full transition-all transform hover:scale-105 hover:shadow-xl flex items-center justify-center gap-2"
+              type="button"
+              onClick={() => setIsLogin(true)}
+              data-testid="tab-login"
+              className={`flex-1 py-2 rounded-full text-sm font-semibold transition-all ${isLogin ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}
             >
-              <span>Entrar com Google</span>
+              Entrar
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsLogin(false)}
+              data-testid="tab-register"
+              className={`flex-1 py-2 rounded-full text-sm font-semibold transition-all ${!isLogin ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}
+            >
+              Criar conta
             </button>
           </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLogin && (
+              <input
+                type="text"
+                placeholder="Seu nome"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                data-testid="register-name-input"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all text-gray-700"
+                required
+              />
+            )}
+            <input
+              type="tel"
+              placeholder="(00) 00000-0000"
+              value={phone}
+              onChange={handlePhoneChange}
+              data-testid="phone-input"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all text-gray-700"
+              required
+            />
+            <input
+              type="password"
+              placeholder="Senha"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              data-testid="password-input"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all text-gray-700"
+              minLength={6}
+              required
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              data-testid="auth-submit-button"
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 px-6 rounded-full transition-all transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none"
+            >
+              {loading ? 'Aguarde...' : isLogin ? 'Entrar' : 'Criar conta'}
+            </button>
+          </form>
           
           <p className="text-xs text-gray-500 mt-6">
             Ao entrar, você concorda com nossos termos de uso e política de privacidade.

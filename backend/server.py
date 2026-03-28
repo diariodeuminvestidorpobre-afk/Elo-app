@@ -17,6 +17,8 @@ from pywebpush import webpush, WebPushException
 import json
 import asyncio
 from contextlib import asynccontextmanager
+import bcrypt
+import re
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -42,8 +44,24 @@ STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
 APP_NAME = "elo"
 storage_key = None
 
+# JWT Secret
+JWT_SECRET = os.environ.get('JWT_SECRET', 'fallback_secret_key_change_me')
+
 # Stripe Checkout
 stripe_checkout = None
+
+# Password hashing functions
+def hash_password(password: str) -> str:
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+    return hashed.decode("utf-8")
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+
+def normalize_phone(phone: str) -> str:
+    """Remove all non-digit characters from phone number"""
+    return re.sub(r'\D', '', phone)
 
 # Global task for background notification processing
 notification_task = None
@@ -107,6 +125,28 @@ async def lifespan(app: FastAPI):
         notification_task = asyncio.create_task(notification_processor())
         logger.info("Notification processor started")
         
+        # Seed test user if not exists
+        test_phone = "11999999999"
+        test_user = await db.users.find_one({"phone": test_phone})
+        if not test_user:
+            test_user_data = {
+                "user_id": f"user_{uuid.uuid4().hex[:12]}",
+                "phone": test_phone,
+                "email": None,
+                "name": "Usuário Teste",
+                "password_hash": hash_password("teste123"),
+                "picture": None,
+                "bio": "Conta de teste do Elo",
+                "followers_count": 0,
+                "following_count": 0,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.users.insert_one(test_user_data)
+            logger.info("Test user seeded: phone=11999999999 password=teste123")
+        
+        # Create index on phone
+        await db.users.create_index("phone", sparse=True)
+        
     except Exception as e:
         logger.error(f"Startup error: {e}")
     
@@ -130,7 +170,8 @@ api_router = APIRouter(prefix="/api")
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
     user_id: str
-    email: str
+    phone: Optional[str] = None
+    email: Optional[str] = None
     name: str
     picture: Optional[str] = None
     bio: Optional[str] = None
@@ -297,16 +338,128 @@ async def moderate_content(text: str) -> bool:
 
 # ============= AUTH ROUTES =============
 
+class RegisterRequest(BaseModel):
+    phone: str
+    password: str
+    name: str
+
+class LoginRequest(BaseModel):
+    phone: str
+    password: str
+
+@api_router.post("/auth/register")
+async def register(req: RegisterRequest):
+    """Register a new user with phone + password"""
+    phone = normalize_phone(req.phone)
+    
+    if len(phone) < 10 or len(phone) > 15:
+        raise HTTPException(status_code=400, detail="Número de telefone inválido")
+    
+    if len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="Senha deve ter pelo menos 6 caracteres")
+    
+    if len(req.name.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Nome deve ter pelo menos 2 caracteres")
+    
+    # Check if phone already exists
+    existing = await db.users.find_one({"phone": phone})
+    if existing:
+        raise HTTPException(status_code=400, detail="Este número já está cadastrado")
+    
+    # Create user
+    user_id = f"user_{uuid.uuid4().hex[:12]}"
+    password_hash = hash_password(req.password)
+    
+    user_data = {
+        "user_id": user_id,
+        "phone": phone,
+        "email": None,
+        "name": req.name.strip(),
+        "password_hash": password_hash,
+        "picture": None,
+        "bio": None,
+        "followers_count": 0,
+        "following_count": 0,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(user_data)
+    
+    # Create session
+    session_token = f"sess_{uuid.uuid4().hex}"
+    session_data = {
+        "session_token": session_token,
+        "user_id": user_id,
+        "expires_at": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.user_sessions.insert_one(session_data)
+    
+    # Return user (without password_hash)
+    user_response = {k: v for k, v in user_data.items() if k not in ("password_hash", "_id")}
+    
+    response = JSONResponse(content=user_response)
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=30*24*60*60,
+        path="/"
+    )
+    return response
+
+@api_router.post("/auth/login")
+async def login(req: LoginRequest):
+    """Login with phone + password"""
+    phone = normalize_phone(req.phone)
+    
+    # Find user by phone
+    user_doc = await db.users.find_one({"phone": phone}, {"_id": 0})
+    if not user_doc:
+        raise HTTPException(status_code=401, detail="Número ou senha incorretos")
+    
+    # Verify password
+    if not user_doc.get("password_hash"):
+        raise HTTPException(status_code=401, detail="Número ou senha incorretos")
+    
+    if not verify_password(req.password, user_doc["password_hash"]):
+        raise HTTPException(status_code=401, detail="Número ou senha incorretos")
+    
+    # Create session
+    session_token = f"sess_{uuid.uuid4().hex}"
+    session_data = {
+        "session_token": session_token,
+        "user_id": user_doc["user_id"],
+        "expires_at": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.user_sessions.insert_one(session_data)
+    
+    # Return user (without password_hash)
+    user_response = {k: v for k, v in user_doc.items() if k != "password_hash"}
+    
+    response = JSONResponse(content=user_response)
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=30*24*60*60,
+        path="/"
+    )
+    return response
+
 @api_router.post("/auth/session")
 async def create_session(request: Request):
-    """Exchange session_id for user data and create session"""
+    """Legacy: Exchange session_id for user data (kept for compatibility)"""
     body = await request.json()
     session_id = body.get("session_id")
     
     if not session_id:
         raise HTTPException(status_code=400, detail="session_id required")
     
-    # REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
     try:
         resp = requests.get(
             "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
@@ -318,15 +471,14 @@ async def create_session(request: Request):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to get session data: {str(e)}")
     
-    # Check if user exists
     user_doc = await db.users.find_one({"email": data["email"]}, {"_id": 0})
     
     if not user_doc:
-        # Create new user
         user_id = f"user_{uuid.uuid4().hex[:12]}"
         user_data = {
             "user_id": user_id,
             "email": data["email"],
+            "phone": None,
             "name": data["name"],
             "picture": data.get("picture"),
             "bio": None,
@@ -337,16 +489,11 @@ async def create_session(request: Request):
         await db.users.insert_one(user_data)
     else:
         user_id = user_doc["user_id"]
-        # Update user info
         await db.users.update_one(
             {"user_id": user_id},
-            {"$set": {
-                "name": data["name"],
-                "picture": data.get("picture")
-            }}
+            {"$set": {"name": data["name"], "picture": data.get("picture")}}
         )
     
-    # Create session
     session_token = data["session_token"]
     session_data = {
         "session_token": session_token,
@@ -356,10 +503,10 @@ async def create_session(request: Request):
     }
     await db.user_sessions.insert_one(session_data)
     
-    # Get user data
     user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    user_response = {k: v for k, v in user_doc.items() if k != "password_hash"}
     
-    response = JSONResponse(content=user_doc)
+    response = JSONResponse(content=user_response)
     response.set_cookie(
         key="session_token",
         value=session_token,
