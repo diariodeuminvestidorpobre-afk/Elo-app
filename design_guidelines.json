@@ -1,0 +1,130 @@
+{
+  "theme": "light_with_dark_mode_support",
+  "archetype": "1 - Organic & Earthy",
+  "colors": {
+    "light": {
+      "background": "#FAFAFA",
+      "surface": "#FFFFFF",
+      "surface_glass": "rgba(255, 255, 255, 0.7)",
+      "primary": "#4A90E2",
+      "primary_hover": "#357ABD",
+      "secondary": "#DCA846",
+      "secondary_hover": "#C09038",
+      "text_primary": "#1A1A1A",
+      "text_secondary": "#666666",
+      "border": "#E5E5E5",
+      "success": "#34C759",
+      "danger": "#FF3B30",
+      "verse_card_bg": "#F5F3EC"
+    },
+    "dark": {
+      "background": "#0F172A",
+      "surface": "#1E293B",
+      "surface_glass": "rgba(30, 41, 59, 0.7)",
+      "primary": "#60A5FA",
+      "primary_hover": "#3B82F6",
+      "secondary": "#FBBF24",
+      "secondary_hover": "#F59E0B",
+      "text_primary": "#F8FAFC",
+      "text_secondary": "#94A3B8",
+      "border": "#334155",
+      "success": "#10B981",
+      "danger": "#EF4444",
+      "verse_card_bg": "#1C2331"
+    }
+  },
+  "typography": {
+    "fonts": {
+      "heading": "'Playfair Display', serif",
+      "body": "'Outfit', sans-serif",
+      "ui": "'Outfit', sans-serif"
+    },
+    "scale": {
+      "h1": "text-4xl sm:text-5xl tracking-tight leading-tight font-bold",
+      "h2": "text-2xl sm:text-3xl tracking-tight font-semibold",
+      "h3": "text-xl sm:text-2xl font-semibold",
+      "h4": "text-lg font-medium",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm text-text-secondary",
+      "verse_text": "text-2xl sm:text-3xl font-heading italic leading-relaxed"
+    }
+  },
+  "spacing_and_layout": {
+    "mobile_first": true,
+    "general_padding": "p-4 sm:p-6",
+    "bento_grid": "grid-cols-1 md:grid-cols-12 gap-4 md:gap-6",
+    "radius": {
+      "sm": "rounded-md",
+      "md": "rounded-xl",
+      "lg": "rounded-2xl",
+      "full": "rounded-full"
+    },
+    "shadows": {
+      "soft": "shadow-[0_4px_20px_rgba(0,0,0,0.05)]",
+      "medium": "shadow-[0_8px_30px_rgba(0,0,0,0.08)]",
+      "dark_soft": "shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
+    }
+  },
+  "surfaces": {
+    "glass_header": "backdrop-blur-xl bg-surface-glass border-b border-border",
+    "bottom_nav": "backdrop-blur-xl bg-surface-glass border-t border-border shadow-soft",
+    "content_card": "bg-surface rounded-2xl border border-border/50 shadow-soft p-4 md:p-6 transition-all hover:shadow-medium",
+    "video_overlay": "bg-gradient-to-t from-black/80 via-black/20 to-transparent",
+    "verse_card": "bg-verse-card-bg rounded-2xl p-6 md:p-8 border border-secondary/20 shadow-soft relative overflow-hidden"
+  },
+  "components": {
+    "navigation": "Bottom tab bar for mobile with Phosphor icons (Home, Prayers, Communities, Profile). Fixed glassmorphism header for desktop with logo.",
+    "video_feed": {
+      "layout": "Full viewport height containers (h-[calc(100vh-bottom_nav_height)]). Scroll snap mandatory.",
+      "interactions": "Right-aligned action buttons (Like, Comment, Share, Follow) with soft shadows for visibility over video. Bottom-left aligned user info and caption.",
+      "typography": "White text with subtle text-shadow for readability on videos."
+    },
+    "verse_of_the_day": "Premium card utilizing 'Playfair Display' font. Include a subtle background image with low opacity. Needs a clear 'Share' CTA.",
+    "prayer_requests": "List layout using content_card styling. Include 'Prayed' button (changes from gray to secondary color when clicked) and counter. Generous spacing between items.",
+    "communities": "Grid of rounded rectangular cards (aspect ratio 16:9 or 1:1) with background images, gradients, and community names. Include member count.",
+    "buttons": "Primary CTA: bg-primary text-white rounded-full px-6 py-3 font-medium hover:bg-primary-hover transition-colors. Secondary: bg-secondary text-white rounded-full. Outline: border-2 border-primary text-primary rounded-full."
+  },
+  "icons": {
+    "library": "@phosphor-icons/react",
+    "style": "Duotone or Regular weight, providing a modern and accessible look."
+  },
+  "media": {
+    "video_placeholder_1": {
+      "url": "https://images.unsplash.com/photo-1766869379184-c85fa64eb4ff?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzN8MHwxfHNlYXJjaHwxfHxwZWFjZWZ1bCUyMGNsb3VkcyUyMHNreXxlbnwwfHx8fDE3NzQ2NjgyNzB8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Golden clouds sunset for video placeholder or feed background",
+      "category": "feed_video"
+    },
+    "video_placeholder_2": {
+      "url": "https://images.unsplash.com/photo-1773649530095-902c2b9d2107?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzN8MHwxfHNlYXJjaHw0fHxwZWFjZWZ1bCUyMGNsb3VkcyUyMHNreXxlbnwwfHx8fDE3NzQ2NjgyNzB8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Scattered clouds for video placeholder",
+      "category": "feed_video"
+    },
+    "verse_bg": {
+      "url": "https://images.unsplash.com/photo-1650065045891-e3a7c96a4ad7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzV8MHwxfHNlYXJjaHwxfHxiaWJsZSUyMHJlYWRpbmclMjBzb2Z0JTIwbGlnaHR8ZW58MHx8fHwxNzc0NjY4MjcxfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Open bible in sunlight for Verse of the Day background",
+      "category": "verse_card"
+    },
+    "prayer_bg": {
+      "url": "https://images.pexels.com/photos/5033200/pexels-photo-5033200.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Silhouette of woman praying at sunset",
+      "category": "prayer_section_hero"
+    },
+    "community_bg": {
+      "url": "https://images.pexels.com/photos/13762836/pexels-photo-13762836.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Beautiful blue sky for community groups banner",
+      "category": "community_banner"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Install and use @phosphor-icons/react for icons.",
+    "Install Google Fonts 'Playfair Display' and 'Outfit' in the global CSS/HTML.",
+    "Build a mobile-first PWA layout. The core experience is mobile, with a bottom navigation bar.",
+    "For the TikTok-style video feed, use scroll-snap-type: y mandatory on the container and scroll-snap-align: start on the items. Ensure 100vh calculation accounts for mobile browser bars.",
+    "Use Framer Motion for micro-interactions: tap states on buttons, smooth mounting of the verse of the day card, heart animations for likes.",
+    "Use Shadcn UI components but heavily customize them: remove sharp Vercel-like borders, add the soft shadows and rounded-2xl corners defined in the surfaces section.",
+    "Implement the 'Verse of the Day' as a beautiful, shareable card that can be captured. Use Playfair Display for the verse text.",
+    "Prayer requests should have a 'I prayed for this' button that increments a counter and changes color state, providing immediate positive feedback.",
+    "Ensure all text over images/videos has proper contrast using gradients or drop shadows.",
+    "Add 'data-testid' to all interactive elements for testing."
+  ]
+}

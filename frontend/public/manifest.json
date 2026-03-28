@@ -1,0 +1,42 @@
+{
+  "short_name": "Elo",
+  "name": "Elo - Rede Social Cristã",
+  "description": "Conecte-se, ore e compartilhe fé com a comunidade",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:rgb(37,99,235)'/%3E%3Cstop offset='100%25' style='stop-color:rgb(239,68,68)'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='192' height='192' rx='48'/%3E%3Ctext x='96' y='130' font-family='Poppins,sans-serif' font-size='100' font-weight='800' fill='white' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E",
+      "type": "image/svg+xml",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:rgb(37,99,235)'/%3E%3Cstop offset='100%25' style='stop-color:rgb(239,68,68)'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='512' height='512' rx='128'/%3E%3Ctext x='256' y='360' font-family='Poppins,sans-serif' font-size='280' font-weight='800' fill='white' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#2563EB",
+  "background_color": "#FFFFFF",
+  "orientation": "portrait",
+  "scope": "/",
+  "categories": ["social", "lifestyle", "entertainment"],
+  "shortcuts": [
+    {
+      "name": "Pedidos de Oração",
+      "short_name": "Orações",
+      "description": "Ver pedidos de oração",
+      "url": "/prayers",
+      "icons": [{ "src": "/logo192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Comunidades",
+      "short_name": "Comunidades",
+      "description": "Acessar comunidades",
+      "url": "/communities",
+      "icons": [{ "src": "/logo192.png", "sizes": "192x192" }]
+    }
+  ]
+}
